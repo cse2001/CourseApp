@@ -10,7 +10,7 @@ const { pool } = require("../db/dbConfig");
 
 
 router.get("/me", authenticateJwt, async (req, res) => {
-    // const admin = await Admin.findOne({ username: req.user.username });
+  
     console.log("admin/me :");
     console.log(req.user);
     pool.query(`SELECT * FROM users WHERE email = $1`, [req.user.username], (err, dbres) => {
