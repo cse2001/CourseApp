@@ -1,0 +1,5 @@
+npm install @mui/icons-material --save
+npm install @mui/x-data-grid -save  
+npm install --save @mui/x-data-grid-generator
+
+package-lock.json: line 154 original line: "react": ">=16.8.0"

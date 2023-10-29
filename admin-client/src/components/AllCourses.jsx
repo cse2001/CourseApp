@@ -47,7 +47,7 @@ function AllCourses() {
             </div>
         </div>
         
-        <div style={{display: "flex", flexWrap: "wrap", justifyContent: "center", marginTop:20}}>
+        <div style={{display: "flex", flexWrap: "wrap", justifyContent:"left", marginTop:20, marginLeft:80}}>
         {allCourses.map(course => {
             return <Course course={course}/>}
         )}

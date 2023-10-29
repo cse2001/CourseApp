@@ -45,11 +45,9 @@ router.post('/signup', async (req, res) => {
       pool.query(`SELECT * FROM users
                   WHERE email = $1`, [username], (err, dbres) => {
                     if (err) {
-                      throw err
+                      console.log(err);
                     }
-
                     // console.log(dbres.rows);
-
                     if (dbres.rows.length > 0 ){
                       errors.push({message: "Email Already Exists."})
                       res.status(403).json({message: "Email Already Exists."});
@@ -59,7 +57,7 @@ router.post('/signup', async (req, res) => {
                                   VALUES ($1, $2, $3)
                                   RETURNING id, password`, [username, password, 'admin'], (err, dbres) => {
                                     if (err) {
-                                      throw err;
+                                      console.log(err);
                                     }
                                     else{
                                       console.log(dbres.rows);
@@ -74,9 +72,10 @@ router.post('/signup', async (req, res) => {
   router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     console.log(username);
-    pool.query(`SELECT * FROM users WHERE email = $1 AND password = $2`, [username, password], (err, dbres) => {
-      if (err){
-        throw err;
+    pool.query(`SELECT * FROM users WHERE email = $1 AND password = $2`, [username, password], (dberr, dbres) => {
+      if (dberr){
+        console.log(dberr);
+        return;
       }
       console.log("admin/login (post)");
       console.log(dbres.rows); // user row from db
@@ -98,7 +97,7 @@ router.post('/signup', async (req, res) => {
     const { title, instructor, imageLink, subscribers} = req.body;
     pool.query(`SELECT * FROM courses WHERE "courseTitle" = $1`, [title], (dberr, dbres) => {
       if (dberr) {
-        throw dberr;
+        console.log(dberr);
       }
       if (dbres.rows.length > 0) {
         res.status(401).json({message : "Course title already exists"})
@@ -109,7 +108,7 @@ router.post('/signup', async (req, res) => {
                                   VALUES ($1, $2, $3, $4)
                                   RETURNING "courseId", "courseTitle"`, [title, instructor, imageLink, subscribers], (dberr, dbres) => {
                                     if (dberr) {
-                                      throw dberr;
+                                      console.log(dberr);
                                     }
                                     else{
                                       console.log(dbres.rows);
@@ -133,7 +132,7 @@ router.post('/signup', async (req, res) => {
   router.get('/courses', authenticateJwt, async (req, res) => {
     // const courses = await Course.find({});
     console.log("Getting all courses");
-    pool.query(`SELECT * FROM courses`, [], (dberr, dbres) => {
+    pool.query(`SELECT * FROM courses ORDER BY "courseId" ASC`, [], (dberr, dbres) => {
       if (dberr) {
         throw dberr;
       }
@@ -165,26 +164,51 @@ router.post('/signup', async (req, res) => {
 
   router.post('/courses/:courseId', authenticateJwt, async (req, res) => {
     const courseId = req.params.courseId;
+    //check if users exists
+    pool.query(`SELECT * FROM users WHERE email = $1`, [req.body.username], (dberr, dbres) => {
+      if (dberr) {
+        console.log(dberr);
+        return;
+      }
+      if (dbres.rows.length == 0) {
+        res.json({message : "User does not exist"});
+        return;
+      }
+    })
+
     //check if course already subscribed
     pool.query(`SELECT * FROM users WHERE email = $1 AND $2 = ANY("subscribedCourses");`, [req.body.username, courseId],
           (dberr, dbres) => {
             if (dberr) {
-              throw dberr;
+              console.log(dberr);
             }
             if (dbres.rows.length != 0) {
               res.json({message : "Course Already registered"});
             }
-            else {
-              // course not already registered
+
+            else {  // course not already registered
+              
+              // add course to users table entry 
               pool.query(`UPDATE users SET "subscribedCourses" = array_append("subscribedCourses", $1)
               WHERE email = $2`, [courseId, req.body.username], (dberr, dbres) => {
                 if (dberr) {
-                  throw dberr;
+                  console.log(dberr);
+                }  
+                // else{
+                //   res.json({ message: 'Course registered successfully' });
+                // }
+              });
+
+              // add user to courses table entry
+              pool.query(`UPDATE courses SET "subscribers" = array_append("subscribers", $1)
+              WHERE "courseId" = $2`, [req.body.username, courseId], (dberr, dbres) => {
+                if (dberr) {
+                  console.log(dberr);
                 }
                 else{
                   res.json({ message: 'Course registered successfully' });
                 }
-              });   
+              });    
             }
           })
     });
@@ -201,20 +225,54 @@ router.post('/signup', async (req, res) => {
             // course does not exist
             res.json({message : "Course Not Registered. Please refresh."});
           }
-          else {
-            // course exists 
+          else { // course exists
             console.log("going to delete course")
+
+            // drop course entry from users table
             pool.query(`UPDATE users SET "subscribedCourses" = array_remove("subscribedCourses", $1)
             WHERE email = $2`, [courseId, req.body.username], (dberr, dbres) => {
               if (dberr) {
-                throw dberr;
+                console.log(dberr);
+              }
+              // else{
+              //   res.json({ message: 'Course Dropped Successfully' });
+              // }
+            });
+            
+            // drop user's entry from courses table
+            pool.query(`UPDATE courses SET "subscribers" = array_remove("subscribers", $1)
+            WHERE "courseId" = $2`, [req.body.username, courseId], (dberr, dbres) => {
+              if (dberr) {
+                console.log(dberr);
               }
               else{
                 res.json({ message: 'Course Dropped Successfully' });
               }
-            });   
+            }); 
           }
         })
     });
 
+
+  router.get('/courses/:courseId/users', authenticateJwt, async (req, res) => {
+    const courseId = req.params.courseId;
+    console.log("gettuing users courses id");
+    console.log(courseId);
+    pool.query(`SELECT * FROM users WHERE $1 = ANY("subscribedCourses") ORDER BY email ASC`, [courseId], (dberr, dbres) => {
+      if (dberr) {
+        throw dberr;
+      }
+      
+      if (dbres.rows.length == 0) {
+        res.json({users : []});
+        console.log("gettuing users");
+        console.log(dbres.rows);
+      }
+      else {
+        res.json({users : dbres.rows});
+        console.log("gettuing users");
+        console.log(dbres.rows);
+      }
+    })
+  });
 module.exports = router

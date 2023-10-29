@@ -1,5 +1,5 @@
 import { Card, Grid } from "@mui/material";
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Typography, TextField, Button } from "@mui/material";
 import axios from "axios";
@@ -8,12 +8,14 @@ import { BASE_URL } from "../config.js";
 import { courseState } from "../store/atoms/course";
 import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
 import { isCourseLoading, courseTitle, courseInstructor, courseImageLink, courseSubscribers } from "../store/selectors/course";
+import BackgroundHeader from "./BackgroundHeader";
+import FullFeaturedCrudGrid from "./ParticipantsTable";
 
-function Course() {
+function UpdateCourseInfo() {
     let { courseId } = useParams();
     const setCourse = useSetRecoilState(courseState);
     const courseLoading = useRecoilValue(isCourseLoading);
-
+    const title = useRecoilValue(courseTitle);
     useEffect(() => {
         axios.get(`${BASE_URL}/admin/course/${courseId}`, {
             method: "GET",
@@ -25,6 +27,7 @@ function Course() {
         })
         .catch(e => {
             setCourse({isLoading: false, course: null});
+            console.log(e);
         });
     }, []);
 
@@ -33,32 +36,22 @@ function Course() {
     }
 
     return <div>
-        {/* <GrayTopper /> */}
-        <Grid container style={{padding: "6vw" }} >
+        <BackgroundHeader text={`Edit Course Info: ${title}`}/>
+        <Grid container style={{paddingTop: "8vw", paddingLeft:"4vw", paddingBottom :"4vw", marginTop:140 }} >
             <Grid item lg={5} md={12} sm={12}>
                 <CourseCard />
             </Grid>
             <Grid item lg={7} md={12} sm={12}>
-                <UpdateCard />
+                <UpdateCourseCard />
             </Grid>
         </Grid>
+
+        <FullFeaturedCrudGrid courseID={courseId}/>
+
     </div>
 }
 
-function GrayTopper() {
-    const title = useRecoilValue(courseTitle);
-    return <div style={{height: 250, background: "#212121", top: 0, width: "100vw", zIndex: 0, marginBottom: -250}}>
-        <div style={{ height: 250, display: "flex", justifyContent: "center", flexDirection: "column"}}>
-            <div>
-                <Typography style={{color: "white", fontWeight: 600}} variant="h3" textAlign={"center"}>
-                    {title}
-                </Typography>
-            </div>
-        </div>
-    </div>
-}
-
-function UpdateCard() {
+function UpdateCourseCard() {
     const [courseInfo, setCourse] = useRecoilState(courseState);
 
     const [title, setTitle] = useState(courseInfo.course.courseTitle);
@@ -107,7 +100,7 @@ function UpdateCard() {
                 value={subscribers}
                 style={{marginBottom: 10}}
                 onChange={(e) => {
-                    setImage(e.target.value)
+                    setSubscribers(e.target.value)
                 }}
                 fullWidth={true}
                 label="Subscribers"
@@ -171,4 +164,5 @@ function CourseCard(props) {
 }
 
 
-export default Course;
+
+export default UpdateCourseInfo;

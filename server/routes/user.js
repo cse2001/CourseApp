@@ -1,21 +1,38 @@
 const express = require('express');
 const { authenticateJwt, SECRET } = require("../middleware/auth");
-const { User, Course, Admin } = require("../db");
+
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { pool } = require("../db/dbConfig");
 
   router.post('/signup', async (req, res) => {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (user) {
-      res.status(403).json({ message: 'User already exists' });
-    } else {
-      const newUser = new User({ username, password });
-      await newUser.save();
-      const token = jwt.sign({ username, role: 'user' }, SECRET, { expiresIn: '1h' });
-      res.json({ message: 'User created successfully', token });
-    }
+    const { username, password, type, name } = req.body;
+    console.log(req.body);
+    //check if email already exists
+    pool.query(`SELECT * FROM users WHERE email = $1`, [username], (dberr, dbres) => {
+      if (dberr){
+        throw dberr;
+      }
+      if (dbres.rows.length != 0){
+        res.json({message: "Email Already Registered"});
+      }
+      else{
+        // Email does not exist
+        pool.query(`INSERT INTO users ( "email", "password", "type", "name" )
+        VALUES ($1, $2, $3, $4)
+        RETURNING "id", "password"`, [ username, password, "student", name], (dberr, dbres) => {
+          if (dberr){
+            res.status(403).json({message: "Server error"})
+            throw dberr;
+          }
+          const token = jwt.sign({ username, role: 'user' }, SECRET, { expiresIn: '1h' });
+          res.json({ message: 'User created successfully', data: dbres.rows[0], token });
+
+        });
+        
+      }
+      
+      })
   });
   
   router.post('/login', async (req, res) => {
@@ -84,13 +101,13 @@ const { pool } = require("../db/dbConfig");
     // }
   });
   
-  router.get('/purchasedCourses', authenticateJwt, async (req, res) => {
-    const user = await User.findOne({ username: req.user.username }).populate('purchasedCourses');
-    if (user) {
-      res.json({ purchasedCourses: user.purchasedCourses || [] });
-    } else {
-      res.status(403).json({ message: 'User not found' });
-    }
-  });
+  // router.get('/purchasedCourses', authenticateJwt, async (req, res) => {
+  //   const user = await User.findOne({ username: req.user.username }).populate('purchasedCourses');
+  //   if (user) {
+  //     res.json({ purchasedCourses: user.purchasedCourses || [] });
+  //   } else {
+  //     res.status(403).json({ message: 'User not found' });
+  //   }
+  // });
   
   module.exports = router

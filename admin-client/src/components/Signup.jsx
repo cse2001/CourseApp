@@ -9,9 +9,11 @@ import {useSetRecoilState} from "recoil";
 import {userState} from "../store/atoms/user.js";
 
 function Signup() {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const navigate = useNavigate()
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [userType, setUserType] = useState("");
+    const [name, setName] = useState("");
+    const navigate = useNavigate();
     const setUser = useSetRecoilState(userState);
 
     return <div>
@@ -27,6 +29,15 @@ function Signup() {
             </div>
         <div style={{display: "flex", justifyContent: "center"}}>
             <Card varint={"outlined"} style={{width: 400, padding: 20}}>
+                <TextField
+                    onChange={(event) => {
+                        setName(event.target.value);
+                    }}
+                    fullWidth={true}
+                    label="Full Name"
+                    variant="outlined"
+                />
+                <br/><br/>
                 <TextField
                     onChange={(event) => {
                         setEmail(event.target.value);
@@ -46,14 +57,23 @@ function Signup() {
                     type={"password"}
                 />
                 <br/><br/>
-
+                <TextField
+                    onChange={(e) => {
+                        setUserType(e.target.value);
+                    }}
+                    fullWidth={true}
+                    label="User Type"
+                    variant="outlined"
+                />
+                <br/><br/>
                 <Button
                     size={"large"}
                     variant="contained"
                     onClick={async () => {
-                        const response = await axios.post(`${BASE_URL}/admin/signup`, {
+                        const response = await axios.post(`${BASE_URL}/${userType}/signup`, {
                             username: email,
-                            password: password
+                            password: password,
+                            name: name
                         })
                         let data = response.data;
                         console.log(data);

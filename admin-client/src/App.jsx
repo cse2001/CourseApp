@@ -5,7 +5,7 @@ import Signup from "./components/Signup.jsx";
 import Appbar from "./components/Appbar.jsx";
 import CreateCourse from "./components/CreateCourse.jsx";
 import AllCourses from "./components/AllCourses";
-import Course from "./components/Course";
+import UpdateCourseInfo from "./components/UpdateCourseInfo.jsx";
 import {Landing} from "./components/Landing.jsx";
 import {AdminLogin} from "./components/AdminLogin.jsx";
 import {StudentLogin} from "./components/StudentLogin.jsx";
@@ -27,7 +27,7 @@ function App() {
                         <InitUser />
                         <Routes>
                             <Route path={"/createcourse"} element={<CreateCourse />} />
-                            <Route path={"/course/:courseId"} element={<Course />} />
+                            <Route path={"/course/:courseId"} element={<UpdateCourseInfo />} />
                             <Route path={"/allcourses"} element={<AllCourses />} />
                             <Route path={"/signin"} element={<Signin />} />
                             <Route path={"/signup"} element={<Signup />} />
