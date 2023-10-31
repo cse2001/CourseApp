@@ -2,11 +2,14 @@ import {Grid, Typography} from "@mui/material";
 import Button from "@mui/material/Button";
 import {useNavigate} from "react-router-dom";
 import {useRecoilValue} from "recoil";
-import { userEmailState } from "../store/selectors/userEmail"
+import { userEmailState } from "../store/selectors/userEmail";
 import {isUserLoading} from "../store/selectors/isUserLoading.js";
 import Link from '@mui/material/Link';
 import LoginBox from "./LoginBox";
 import BackgroundHeader from "./BackgroundHeader";
+import { userTypeState } from "../store/selectors/userType";
+
+
 
 import {
     createTheme,
@@ -34,7 +37,10 @@ const theme = createTheme({
 
 
 export const StudentLogin = () => {
-
+    const userType= useRecoilValue(userTypeState);
+    console.log("user type in stdnt login");
+    console.log(userType);
+    
     return <div >
     
     <BackgroundHeader text={"UNLINE - Student"} />
@@ -65,7 +71,7 @@ function LoginArea() {
                                 To create a new account click to 
                             </Typography>
                             <div style={{marginRight: 10}}>
-                                {/* <ThemeProvider theme={theme}>
+                                <ThemeProvider theme={theme}>
                                     <Button
                                     color="violet"
                                         size={"large"}
@@ -74,12 +80,12 @@ function LoginArea() {
                                             navigate("/signup")
                                         }}
                                     >Signup</Button>
-                                </ThemeProvider> */}
-                            <Link href="/signup">
+                                </ThemeProvider>
+                            {/* <Link href="/signup">
                                 <Typography variant={"h6"} style={{marginLeft:10 , marginRight:20}}>
                                     Register Student 
                                 </Typography>
-                            </Link>
+                            </Link> */}
                             </div>
                         </div>
                          
@@ -94,7 +100,7 @@ function LoginArea() {
                                     }}
                                 >Login</Button>
                             </ThemeProvider> */}
-                            < LoginBox type={"user"}/>
+                            < LoginBox type={"student"}/>
                         </div>
                     </div>}
                     {!userLoading && userEmail && <div >

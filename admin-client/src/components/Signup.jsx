@@ -7,14 +7,22 @@ import { BASE_URL } from "../config.js";
 import {useNavigate} from "react-router-dom";
 import {useSetRecoilState} from "recoil";
 import {userState} from "../store/atoms/user.js";
+import { userTypeState } from "../store/selectors/userType";
+import {useRecoilValue} from "recoil";
+import {useRecoilState} from "recoil";
+
 
 function Signup() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [userType, setUserType] = useState("");
     const [name, setName] = useState("");
     const navigate = useNavigate();
-    const setUser = useSetRecoilState(userState);
+    const [user, setUser] = useRecoilState(userState);
+
+    const userType= user.userType;
+    // const userType= useRecoilValue(userTypeState);
+    console.log("user type in stdnt signup");
+    console.log(userType);
 
     return <div>
             <div style={{
@@ -57,14 +65,14 @@ function Signup() {
                     type={"password"}
                 />
                 <br/><br/>
-                <TextField
+                {/* <TextField
                     onChange={(e) => {
                         setUserType(e.target.value);
                     }}
                     fullWidth={true}
                     label="User Type"
                     variant="outlined"
-                />
+                /> */}
                 <br/><br/>
                 <Button
                     size={"large"}
@@ -73,14 +81,19 @@ function Signup() {
                         const response = await axios.post(`${BASE_URL}/${userType}/signup`, {
                             username: email,
                             password: password,
-                            name: name
+                            name: name,
+                            type: userType
                         })
                         let data = response.data;
                         console.log(data);
-                        // localStorage.setItem("token", data.token);
+                        localStorage.setItem("token", data.token);
                         // window.location = "/"
-                        setUser({userEmail: email, isLoading: false})
-                        // navigate("/courses")
+                        setUser({userEmail: email,
+                                isLoading: false,
+                                userType: userType,
+                                userCourses: null});
+                        alert(`User created: ${response.data}`);
+                        navigate("/allcourses")
                     }}
 
                 > Signup</Button>

@@ -10,6 +10,8 @@ import {Landing} from "./components/Landing.jsx";
 import {AdminLogin} from "./components/AdminLogin.jsx";
 import {StudentLogin} from "./components/StudentLogin.jsx";
 import { userState } from "./store/atoms/user.js";
+import {useRecoilState} from "recoil";
+
 
 import axios from "axios";
 import {BASE_URL} from "./config.js";
@@ -43,7 +45,9 @@ function App() {
 
 
 function InitUser() {
-    const setUser = useSetRecoilState(userState);
+    // const setUser = useSetRecoilState(userState);
+    const [user, setUser] = useRecoilState(userState);
+
     const init = async() => {
         try {
             const response = await axios.get(`${BASE_URL}/admin/me`, {
@@ -56,23 +60,33 @@ function InitUser() {
                 setUser({
                     isLoading: false,
                     userEmail: response.data.username,
-                    userType: response.data.userType,
+                    userType: response.data.userType || user.userType,
                     userCourses: response.data.userCourses,
                 })
             } else {
-                setUser({
+                // setUser({
+                //     isLoading: false,
+                //     userEmail: null,
+                //     userType: null,
+                //     userCourses: null,
+                // })
+                setUser({...user,
                     isLoading: false,
                     userEmail: null,
-                    userType: null,
                     userCourses: null,
                 })
             }
         } catch (e) {
 
-            setUser({
+            // setUser({
+            //     isLoading: false,
+            //     userEmail: null,
+            //     userType: null,
+            //     userCourses: null,
+            // })
+            setUser({...user,
                 isLoading: false,
                 userEmail: null,
-                userType: null,
                 userCourses: null,
             })
         }
