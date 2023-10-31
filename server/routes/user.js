@@ -20,7 +20,7 @@ const { pool } = require("../db/dbConfig");
         // Email does not exist
         pool.query(`INSERT INTO users ( "email", "password", "type", "name" )
         VALUES ($1, $2, $3, $4)
-        RETURNING "id", "password"`, [ username, password, "student", name], (dberr, dbres) => {
+        RETURNING "id", "password"`, [ username, password, type, name], (dberr, dbres) => {
           if (dberr){
             res.status(403).json({message: "Server error"})
             throw dberr;

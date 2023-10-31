@@ -4,10 +4,14 @@ import {Card, Typography} from "@mui/material";
 import {useState} from "react";
 import axios from "axios";
 import { BASE_URL } from "../config.js"
+import {useNavigate} from "react-router-dom";
+
+
 function CreateCourse() {
     const [title, setTitle] = useState("");
     const [instructor, setInstructor] = useState("");
     const [imageLink, setImageLink] = useState("");
+    const navigate = useNavigate()
 
     return <div style={{display: "flex", justifyContent: "center", minHeight: "80vh", justifyContent: "center", flexDirection: "column"}}>
         <div style={{display: "flex", justifyContent: "center"}}>
@@ -64,6 +68,7 @@ function CreateCourse() {
                             }
                         });
                         alert("Added New Course Successfully");
+                        navigate("/allcourses");
                     }}
                 > Create Course</Button>
             </Card>

@@ -79,30 +79,14 @@ export function Course(props) {
         <img src={props.course.imageLink} style={{width: 250}} ></img>
         <div style={{display: "flex", justifyContent: "center", marginTop: 20}}>
             
+            {!userCourses && <div style={{marginRight: 20}}>
+            {/* Enroll button if user courses is null*/}
+            <EnrollButton userType={userType} courseId={props.course.courseId}/>
+            </div>}
+
             {userCourses && !userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
-            <Button
-            size={"small"}
-            variant="contained"
-            onClick={async () => {
-                const res = await axios.post(`${BASE_URL}/${userType}/courses/${props.course.courseId}`, {
-                    username: userEmail
-                }, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                        "Content-type": "application/json"
-                    }
-                });
-                const data = res.data;
-                console.log(data);
-                alert(res.data.message);
-                const newUserCourses = [...userCourses, props.course.courseId];
-                // setUserCourses(newUserCourses);
-                setUser({
-                    ...user,
-                    userCourses: newUserCourses,
-                });
-                navigate("/allcourses");
-            }}>Enroll</Button>
+            {/* Enroll button if userCourses does not contains this courseId*/}
+            <EnrollButton userType={userType} courseId={props.course.courseId}/>
             </div>}
 
             {userCourses && userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
@@ -139,6 +123,34 @@ export function Course(props) {
             </div>}
         </div>
     </Card>
+}
+
+function EnrollButton(props){
+    const navigate = useNavigate();
+    const [user, setUser] = useRecoilState(userState);
+    return (<Button
+            size={"small"}
+            variant="contained"
+            onClick={async () => {
+                const res = await axios.post(`${BASE_URL}/${props.userType}/courses/${props.courseId}`, {
+                    username: user.userEmail
+                }, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        "Content-type": "application/json"
+                    } 
+                });
+                const data = res.data;
+                console.log(data);
+                alert(res.data.message);
+                const newUserCourses = [...user.userCourses, props.courseId];
+                // setUserCourses(newUserCourses);
+                setUser({
+                    ...user,
+                    userCourses: newUserCourses,
+                });
+                navigate("/allcourses");
+            }}>Enroll</Button>)
 }
 
 export default AllCourses;
