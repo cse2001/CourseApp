@@ -1,0 +1,45 @@
+https://www.cse.iitb.ac.in/~mythili/os/
+https://pages.cs.wisc.edu/~remzi/OSTEP/
+https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
+https://www.learnlinux.org.za/courses/build/internals/internals.pdf
+
+
+
+WIFEXITED(status) checks if the child process (the diff command in this case) terminated normally, that is, by calling exit(3) or _exit(2), or by returning from main(). If it did, WEXITSTATUS(status) returns the exit status of the child process2. This will be the exit status of the diff command.
+
+
+
+The `listen()` function in C is used to mark a socket as a passive socket, that is, a socket that will be used to accept incoming connection requests using `accept()`. This function is typically used with TCP/IP sockets¹.
+
+Here's the syntax of the `listen()` function:
+```c
+int listen(int sockfd, int backlog);
+```
+- `sockfd`: This is the socket file descriptor that was returned by the `socket()` function.
+- `backlog`: This argument defines the maximum length of the queue of pending connections for `sockfd`. If a connection request arrives when the queue is full, the client may receive an error with an indication of ECONNREFUSED¹.
+
+The `listen()` function essentially puts the server socket in a passive mode, where it waits for clients to approach the server to make a connection². If successful, `listen()` returns 0; otherwise, it returns -1 and sets errno to indicate the error¹.
+
+It's important to note that if the socket has not been bound to a local port before `listen()` is invoked, the system automatically binds a local port for the socket to listen on³. Also, if the `backlog` argument is greater than the value in `/proc/sys/net/core/somaxconn`, then it is silently capped to that value¹.
+
+Source: Conversation with Bing, 28/9/2023
+(1) listen(2) - Linux manual page - man7.org. https://www.man7.org/linux/man-pages/man2/listen.2.html.
+(2) Socket Programming in C/C++ - GeeksforGeeks. https://www.geeksforgeeks.org/socket-programming-cc/.
+(3) Network functions in C - Tutorial - bocks. http://shoe.bocks.com/net/.
+(4) c - Socket programming - What's the difference between listen() and .... https://stackoverflow.com/questions/34073871/socket-programming-whats-the-difference-between-listen-and-accept.
+
+
+
+The htons() function (which stands for “host to network short”) is used to ensure that the binary layout of the port number is in network byte order (big-endian).
+ntohs() (network to host short) is used to convert data from network byte order back to host byte order upon receipt.
+
+serv_addr.sin_addr.s_addr = INADDR_ANY; => INADDR_ANY is a special IP address that tells the kernel to accept incoming connections from any IP address. It’s typically used when a server doesn’t need to bind to a specific IP. When INADDR_ANY is specified in the bind call, the socket will be bound to all local interfaces. To bind a server to a specific IP address, you can replace INADDR_ANY with the specific IP address you want to bind to. This IP address must be assigned to one of the network interfaces on your machine. Here’s how you can do it:
+serv_addr.sin_addr.s_addr = inet_addr("192.168.1.1");
+
+
+./gradingserver 8080
+vmstat -n 10 > cpu_utilization.txt &
+
+
+
+

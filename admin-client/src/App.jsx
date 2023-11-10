@@ -11,6 +11,7 @@ import {AdminLogin} from "./components/AdminLogin.jsx";
 import {StudentLogin} from "./components/StudentLogin.jsx";
 import { userState } from "./store/atoms/user.js";
 import {useRecoilState} from "recoil";
+import CourseContent from './components/CourseContent.jsx';
 
 
 import axios from "axios";
@@ -29,7 +30,8 @@ function App() {
                         <InitUser />
                         <Routes>
                             <Route path={"/createcourse"} element={<CreateCourse />} />
-                            <Route path={"/course/:courseId"} element={<UpdateCourseInfo />} />
+                            <Route path={"/courses/:courseId"} element={<UpdateCourseInfo />} />
+                            <Route path={"/coursecontent/:courseId"} element={<CourseContent />} />
                             <Route path={"/allcourses"} element={<AllCourses />} />
                             <Route path={"/signin"} element={<Signin />} />
                             <Route path={"/signup"} element={<Signup />} />

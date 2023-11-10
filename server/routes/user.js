@@ -109,5 +109,21 @@ const { pool } = require("../db/dbConfig");
   //     res.status(403).json({ message: 'User not found' });
   //   }
   // });
+
+  router.get('/course/:courseId', authenticateJwt, async (req, res) => {
+    const courseId = req.params.courseId;
+    pool.query(`SELECT * FROM courses WHERE "courseId" = $1`, [courseId], (dberr, dbres) => {
+      if (dberr) {
+        throw dberr;
+      }
+      if (dbres.rows.length == 0) {
+        res.json({courses : []});
+      }
+      else {
+        console.log(dbres.rows[0]);
+        res.json({course : dbres.rows[0]});
+      }
+    })
+  });
   
   module.exports = router

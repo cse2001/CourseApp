@@ -45,7 +45,8 @@ function UpdateCourseInfo() {
                 <UpdateCourseCard />
             </Grid>
         </Grid>
-
+        <UploadCard courseId={courseId} />
+        
         <FullFeaturedCrudGrid courseID={courseId}/>
 
     </div>
@@ -163,6 +164,90 @@ function CourseCard(props) {
     </div>
 }
 
+function UploadCard(props) {
+    const [file, setFile] = useState(null);
+    const [fileTitle, setFileTitle] = useState('');
+    const [fileType, setFileType] = useState(''); // New state for file type
+    const [progress, setProgress] = useState({started: false, pc: 0});
+    const [msg, setMsg] = useState(null);
+
+    function handleUpload(){
+        if (!file){
+            alert("No file selected");
+            setMsg("Please select a file");
+            return;
+        }
+
+        if (!fileType) {
+            alert("No file type selected");
+            setMsg("Please select a file type");
+            return;
+        }
+
+        if (!fileTitle) {
+            alert("No file title entered");
+            setMsg("Please select a file title");
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('title', fileTitle);
+        fd.append('file', file);
+        fd.append('type', fileType); // Append file type to form data
+        
+        setMsg("Uploading...");
+        setProgress(prevState => {
+            return {...prevState, started: true}
+        })
+        axios.post(`${BASE_URL}/admin/upload/${props.courseId}`, fd, {
+            onUploadProgress: (progressEvent) => { setProgress(prevState => {
+                return {...prevState, pc: progressEvent.progress*100 }
+            }) },
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("token"),
+                "fileinfo": JSON.stringify({fileTitle: fileTitle, fileType: fileType})
+            }
+        })
+        .then(res => {
+            console.log(res.data);
+            setMsg("Upload successfull");
+        })
+        .catch(err => {
+            setMsg("Upload failed");
+            console.log(err);
+        });
+    }
+
+    return <div style={{display: "flex", justifyContent: "center"}}><Card style={{
+        
+        width: 550,
+        marginLeft: 50,
+        minHeight: 100,
+        marginBottom: 50,
+        borderRadius: 20,
+        paddingBottom: 10}}>
+        <div style={{display: "flex", justifyContent: "center"}}><h3>Upload Files</h3></div>
+        <input onChange={(e) => setFileTitle(e.target.value)} type="text" placeholder="Enter title" />
+        <br /><br />
+        <div>Select file type:</div> 
+        <select onChange={(e) => setFileType(e.target.value)} required>
+            <option value="">Select a file type</option> 
+            <option value="text">Text</option>
+            <option value="pdf">PDF</option>
+            <option value="video">Video</option>
+            <option value="image">Image</option>
+        </select>
+        <br /><br />
+        <div>
+        <input onChange={(e) => {setFile(e.target.files[0])}} type="file"/>
+        <button onClick={handleUpload}>Upload</button>
+        {progress.started && <progress max="100" value={progress.pc}></progress>}
+        </div>
+        <br/>
+        {msg && <span>{msg}</span>}
+        
+    </Card></div>
+}
 
 
 export default UpdateCourseInfo;

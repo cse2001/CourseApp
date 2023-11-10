@@ -65,21 +65,20 @@ function LoginArea() {
                                 To create a new account click to 
                             </Typography>
                             <div style={{marginRight: 10}}>
-                                {/* <ThemeProvider theme={theme}>
+                                
                                     <Button
-                                    color="violet"
-                                        size={"large"}
+                                        size={"small"}
                                         variant={"contained"}
                                         onClick={() => {
                                             navigate("/signup")
                                         }}
                                     >Signup</Button>
-                                </ThemeProvider> */}
-                            <Link href="/signup">
+                                
+                            {/* <Link href="/signup">
                                 <Typography variant={"h6"} style={{marginLeft:10 , marginRight:20}}>
                                     Register Admin 
                                 </Typography>
-                            </Link>
+                            </Link> */}
                             </div>
                         </div>
                          

@@ -11,7 +11,7 @@ import { userEmailState } from "../store/selectors/userEmail.js";
 import { userCoursesState } from "../store/selectors/userCourses.js";
 import { userTypeState } from "../store/selectors/userType.js";
 import {userState} from "../store/atoms/user.js";
-
+import { CardActionArea, CardActions, CardContent  } from '@mui/material';
 
 function AllCourses() {
     const [allCourses, setAllCourses] = useState([]);
@@ -71,13 +71,18 @@ export function Course(props) {
         minHeight: 180,
         padding: 20
     }}>
-        <Typography textAlign={"center"} variant="h5">{props.course.courseTitle}</Typography>
-        <Typography textAlign={"center"} variant="subtitle1"><i>Instructor: {props.course.courseInstructor}</i></Typography>
-        {userCourses && userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
-        <Typography textAlign={"center"} variant="subtitle1">Enrolled !</Typography>
-        </div>}
-        <img src={props.course.imageLink} style={{width: 250}} ></img>
-        <div style={{display: "flex", justifyContent: "center", marginTop: 20}}>
+        <CardActionArea onClick={()=>{navigate("/coursecontent/" + props.course.courseId);}}>
+            <CardContent>
+            <Typography textAlign={"center"} variant="h5">{props.course.courseTitle}</Typography>
+            <Typography textAlign={"center"} variant="subtitle1"><i>Instructor: {props.course.courseInstructor}</i></Typography>
+            {userCourses && userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
+            <Typography textAlign={"center"} variant="subtitle1">Enrolled !</Typography>
+            </div>}
+            <img src={props.course.imageLink} style={{width: 250}} ></img>
+            </CardContent>
+        </CardActionArea>
+        <CardActions>
+        <div style={{display: "flex", justifyContent:"space-between", marginTop: 20}}>
             
             {!userCourses && <div style={{marginRight: 20}}>
             {/* Enroll button if user courses is null*/}
@@ -118,10 +123,11 @@ export function Course(props) {
             {(userType == "admin") && <div>
             <Button variant="contained" size="small" onClick={() => {
                 {/* Add condition for EDIT button to only appear for ADMIN */}
-                navigate("/course/" + props.course.courseId);
+                navigate("/courses/" + props.course.courseId);
             }}>Edit</Button>
             </div>}
         </div>
+        </CardActions>
     </Card>
 }
 
@@ -143,7 +149,14 @@ function EnrollButton(props){
                 const data = res.data;
                 console.log(data);
                 alert(res.data.message);
-                const newUserCourses = [...user.userCourses, props.courseId];
+                var newUserCourses = [];
+                if (user.userCourses){
+                    newUserCourses = [...user.userCourses, props.courseId];
+                }
+                else{
+                    newUserCourses = [props.courseId];
+                }
+                
                 // setUserCourses(newUserCourses);
                 setUser({
                     ...user,

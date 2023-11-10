@@ -1,13 +1,161 @@
-const mongoose = require("mongoose");
 const express = require('express');
-const { User, Course, Admin } = require("../db");
 const jwt = require('jsonwebtoken');
 const { SECRET } = require("../middleware/auth")
 const { authenticateJwt } = require("../middleware/auth");
 
 const router = express.Router();
 const { pool } = require("../db/dbConfig");
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+    const courseId = req.params.courseId;
+    console.log('file info:');
+    console.log(req.headers.fileinfo);
+    let jsondata = JSON.parse(req.headers.fileinfo);
+    const fileTitle = jsondata.fileTitle;
+    console.log(`Titlee : ${fileTitle}`);
+    const dirPath = `./public/courseId_${courseId}/${fileTitle}`;
+
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    // let jsondata = JSON.stringify(data); 
+    fs.writeFile(`./public/courseId_${courseId}/${fileTitle}/fileinfo.json`, req.headers.fileinfo, (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log("JSON file written successfully");
+      }
+    });
+
+    return callback(null, dirPath);
+  },
+  filename: (req, file, callback) => {
+    return callback(null, `${Date.now()}_${file.originalname}`)
+  }
+})
+
+const uploadHandler = multer({storage})
+
+router.post('/upload/:courseId', authenticateJwt, uploadHandler.single('file'), (req, res) => {
+  // console.log(req.body);
+  console.log(req.file);
+  const title = req.body.title; 
+  console.log(`Titlee of file: ${title}`);
+  res.json({message: "Upload successfull at server"})
+})
+
+router.get('/upload/:courseId', authenticateJwt, (req, res) => {
+  // sends file names only
+
+  const courseId = req.params.courseId;
+  // const directoryPath = path.join(__dirname, `./public/couseId_${courseId}`);
+  const directoryPath = `./public/courseId_${courseId}`
+  fs.readdir(directoryPath, function (err, files) {
+    if (err) {
+      console.log(err);
+      res.status(500).send('Unable to scan directory: ' + err);
+      return;
+    } 
+    // res.send(files.map((filename) => {return {fileName, fileType}}));
+    res.send(files.filter(item => item !== "fileinfo.json"));
+  });
+});
+
+/* new send file content */
+
+router.get('/upload/:courseId/:fileTitle', authenticateJwt, async (req, res) => {
+  const courseId = req.params.courseId;
+  const fileTitle = req.params.fileTitle;
+  const directoryPath = `./public/courseId_${courseId}/${fileTitle}`;
+  
+  try {
+    const files = await fs.promises.readdir(directoryPath);
+    console.log(`files found in ${fileTitle} dir: ${files}`);
+    const filename = files.filter(item => item !== "fileinfo.json")[0];
+    const filePath = path.join(directoryPath, filename);
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const ext = path.extname(filePath).toLowerCase(); 
+    let contentType;
+
+    if (ext === '.txt') {
+      contentType = 'text/plain';
+    } else if (ext === '.jpg' || ext === '.jpeg') {
+      contentType = 'image/jpeg';
+    } else if (ext === '.png') {
+      contentType = 'image/png';
+    } else if (ext === '.mp4') {
+      contentType = 'video/mp4';
+    } else if (ext === '.pdf') {
+      contentType = 'application/pdf';
+    }
+  
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Content-Length': fileSize
+    });
+
+    console.log(`filename: ${filename}   filetype: ${contentType}`);
+
+    const readStream = fs.createReadStream(filePath);
+    readStream.pipe(res);
+  } catch (err) {
+      console.log(err);
+      res.status(500).send('Unable to scan directory: ' + err);
+  }
+
+});
+
+/* old send file content */
+
+// router.get('/upload/:courseId/:fileTitle', authenticateJwt, (req, res) => {
+//   // sends actual file
+//   const courseId = req.params.courseId;
+//   const fileTitle = req.params.fileTitle;
+//   console.log(`fileTitle rcvd: ${fileTitle}`)
+//   // const directoryPath = path.join(__dirname, `./public/couseId_${courseId}`);
+//   const directoryPath = `./public/courseId_${courseId}/${fileTitle}`
+//   fs.readdir(directoryPath, function (err, files) {
+//     if (err) {
+//       console.log(err);
+//       res.status(500).send('Unable to scan directory: ' + err);
+//       return;
+//     }
+//     console.log(`files found in ${fileTitle} dir: ${files}`) 
+//     // res.send(files);
+//     const fileType = null;
+//     fs.readFile(path.join(directoryPath, "fileinfo.json"), 'utf8' , (err, data) => {
+//       if (err) {
+//           console.error(err);
+//           return res.sendStatus(500);
+//       }
+//       const fileinfo = JSON.parse(data);
+//       const fileType = String(fileinfo.fileType);
+//       console.log(`filetype: ${fileType}`);
+      
+//       // if (path.extname(files[0]) == ".txt"){
+//       const filename = files.filter(item => item !== "fileinfo.json")[0];
+//       console.log(`filename: ${filename}   filetype: ${fileType}`);
+//       if (fileType == "text"){
+//         const filePath = path.join(directoryPath, filename); 
+//         console.log(`filename: ${filename}   filetype: ${fileType}   2`);
+//         fs.readFile(filePath, 'utf8' , (err, data) => {
+//         if (err) {
+//             console.error(err);
+//             return res.sendStatus(500);
+//         }
+//         res.send(data);
+//         return;
+//         });
+//       } 
+//     })
+//   });
+// });
 
 router.get("/me", authenticateJwt, async (req, res) => {
   
@@ -238,6 +386,7 @@ router.post('/signup', async (req, res) => {
               //   res.json({ message: 'Course Dropped Successfully' });
               // }
             });
+          
             
             // drop user's entry from courses table
             pool.query(`UPDATE courses SET "subscribers" = array_remove("subscribers", $1)
