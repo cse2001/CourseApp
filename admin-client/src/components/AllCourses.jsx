@@ -11,6 +11,7 @@ import { userEmailState } from "../store/selectors/userEmail.js";
 import { userCoursesState } from "../store/selectors/userCourses.js";
 import { userTypeState } from "../store/selectors/userType.js";
 import {userState} from "../store/atoms/user.js";
+import {courseState} from "../store/atoms/course.js";
 import { CardActionArea, CardActions, CardContent  } from '@mui/material';
 
 function AllCourses() {
@@ -18,6 +19,7 @@ function AllCourses() {
     const user = useRecoilValue(userState);    
     const userType = user.userType;
     var userCourses = user.userCourses;
+    
     // console.log("user courses AAL:")
     // console.log(userCourses);
     // console.log("user type AAl:");
@@ -64,6 +66,7 @@ export function Course(props) {
     // console.log(userCourses);
     // const setUserCourses = useSetRecoilState(userCoursesState);
     const [user, setUser] = useRecoilState(userState);
+    const [course, setCourse] = useRecoilState(courseState);
     const userType = user.userType;
     return <Card style={{
         margin: 10,
@@ -71,7 +74,11 @@ export function Course(props) {
         minHeight: 180,
         padding: 20
     }}>
-        <CardActionArea onClick={()=>{navigate("/coursecontent/" + props.course.courseId);}}>
+        <CardActionArea onClick={()=>{
+            navigate("/coursecontent/" + props.course.courseId);
+            setCourse({isLoading: false,
+                        course: props.course,} );
+            }}>
             <CardContent>
             <Typography textAlign={"center"} variant="h5">{props.course.courseTitle}</Typography>
             <Typography textAlign={"center"} variant="subtitle1"><i>Instructor: {props.course.courseInstructor}</i></Typography>
@@ -86,12 +93,12 @@ export function Course(props) {
             
             {!userCourses && <div style={{marginRight: 20}}>
             {/* Enroll button if user courses is null*/}
-            <EnrollButton userType={userType} courseId={props.course.courseId}/>
+            <EnrollButton userType={userType} courseId={props.course.courseId} courseTitle={props.course.courseTitle}/>
             </div>}
 
             {userCourses && !userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
             {/* Enroll button if userCourses does not contains this courseId*/}
-            <EnrollButton userType={userType} courseId={props.course.courseId}/>
+            <EnrollButton userType={userType} courseId={props.course.courseId} courseTitle={props.course.courseTitle}/>
             </div>}
 
             {userCourses && userCourses.includes(props.course.courseId) && <div style={{marginRight: 20}}>
@@ -124,6 +131,8 @@ export function Course(props) {
             <Button variant="contained" size="small" onClick={() => {
                 {/* Add condition for EDIT button to only appear for ADMIN */}
                 navigate("/courses/" + props.course.courseId);
+                setCourse({isLoading: false,
+                    course: props.course,});
             }}>Edit</Button>
             </div>}
         </div>
@@ -138,11 +147,11 @@ function EnrollButton(props){
             size={"small"}
             variant="contained"
             onClick={async () => {
-                const res = await axios.post(`${BASE_URL}/${props.userType}/courses/${props.courseId}`, {
+                const res = await axios.post(`${BASE_URL}/${props.userType}/courses/${props.courseId}/${props.courseTitle}`, {
                     username: user.userEmail
                 }, {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        "Authorization": `Bearer ${localStorage.getItem('token')}`,
                         "Content-type": "application/json"
                     } 
                 });

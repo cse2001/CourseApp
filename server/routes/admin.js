@@ -253,17 +253,33 @@ router.post('/signup', async (req, res) => {
       }
       else{
         pool.query(`INSERT INTO courses ("courseTitle", "courseInstructor", "imageLink", "subscribers")
-                                  VALUES ($1, $2, $3, $4)
-                                  RETURNING "courseId", "courseTitle"`, [title, instructor, imageLink, subscribers], (dberr, dbres) => {
-                                    if (dberr) {
-                                      console.log(dberr);
-                                    }
-                                    else{
-                                      console.log(dbres.rows);
-                                      const course = dbres.rows[0]
-                                      res.json({ message: 'Course created successfully', courseId: course.courseId, courseTitle: course.courseTitle });
-                                    }
-                                  })
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING "courseId", "courseTitle"`, [title, instructor, imageLink, subscribers], (dberr, dbres) => {
+                      if (dberr) {
+                        console.log(dberr);
+                        return;
+                      }
+                      else{
+
+                        console.log(dbres.rows);
+                        const course = dbres.rows[0]
+                        // res.json({ message: 'Course created successfully', courseId: course.courseId, courseTitle: course.courseTitle });
+                        // studentId INTEGER REFERENCES users(id),
+                        pool.query(`CREATE TABLE marks_${title} (
+                          studentId INTEGER,
+                          studentEmail TEXT,
+                          marks INTEGER
+                          );`, [], (dberr, dbres) => {
+                            if (dberr) {
+                              console.log(dberr);
+                            }
+                            else{
+                              res.json({ message: 'Course created successfully', courseId: course.courseId, courseTitle: course.courseTitle });
+                            };
+                          });
+                          pool.end();
+                      }
+                    });
       }
     })
   });
@@ -296,6 +312,7 @@ router.post('/signup', async (req, res) => {
   
   router.get('/course/:courseId', authenticateJwt, async (req, res) => {
     const courseId = req.params.courseId;
+    
     pool.query(`SELECT * FROM courses WHERE "courseId" = $1`, [courseId], (dberr, dbres) => {
       if (dberr) {
         throw dberr;
@@ -310,8 +327,53 @@ router.post('/signup', async (req, res) => {
     })
   });
 
-  router.post('/courses/:courseId', authenticateJwt, async (req, res) => {
+  router.get('/courses/:courseId/marks/:courseTitle', authenticateJwt, async (req, res) => {
     const courseId = req.params.courseId;
+    const courseTitle = req.params.courseTitle;
+    
+    pool.query(`SELECT * FROM marks_${courseTitle} ORDER BY "studentemail" `, [], (dberr, dbres) => {
+      if (dberr) {
+        throw dberr;
+      }
+      if (dbres.rows.length == 0) {
+        res.status(500);
+      }
+      else {
+        res.json({participants:dbres.rows});
+      }
+    })
+  });
+
+  // insert into marks_<courseTitle> table
+  router.post('/courses/:courseId/marks/:courseTitle', authenticateJwt, async (req, res) => {
+    const courseId = req.params.courseId;
+    const courseTitle = req.params.courseTitle;
+    console.log("hi")
+    
+    pool.query(`UPDATE "marks_${courseTitle.toLowerCase()}" SET 
+                "quiz" = $1,
+                "midsem" = $2,
+                "endsem" = $3
+                WHERE "studentemail" = $4
+                RETURNING "quiz", "midsem", "endsem"
+                `, [req.body.quiz, req.body.midsem, req.body.endsem, req.body.studentemail], (dberr, dbres) => {
+      if (dberr) {
+        throw dberr;
+      }
+      if (dbres.rows.length == 0) {
+        console.log(dbres.rows);
+        res.status(500);
+      }
+      else {
+        console.log(dbres.rows);
+        res.json({message: "Grades updated successfully"});
+      }
+    })
+  });
+
+  router.post('/courses/:courseId/:courseTitle', authenticateJwt, async (req, res) => {
+    const courseId = req.params.courseId;
+    const courseTitle = req.params.courseTitle;
     //check if users exists
     pool.query(`SELECT * FROM users WHERE email = $1`, [req.body.username], (dberr, dbres) => {
       if (dberr) {
@@ -329,6 +391,8 @@ router.post('/signup', async (req, res) => {
           (dberr, dbres) => {
             if (dberr) {
               console.log(dberr);
+              res.status(403);
+              return;
             }
             if (dbres.rows.length != 0) {
               res.json({message : "Course Already registered"});
@@ -336,22 +400,44 @@ router.post('/signup', async (req, res) => {
 
             else {  // course not already registered
               
+              var userId;
               // add course to users table entry 
               pool.query(`UPDATE users SET "subscribedCourses" = array_append("subscribedCourses", $1)
-              WHERE email = $2`, [courseId, req.body.username], (dberr, dbres) => {
+              WHERE email = $2
+              RETURNING "id"`, [courseId, req.body.username], (dberr, dbres) => {
                 if (dberr) {
                   console.log(dberr);
-                }  
+                  res.status(403);
+                  return;
+                }
+                userId = dbres.rows[0].id;
+                console.log("userid");
+                console.log(userId);  
                 // else{
                 //   res.json({ message: 'Course registered successfully' });
                 // }
+
+                // add user to marks_<courseTitle> table entry 
+                pool.query(`INSERT INTO "marks_${courseTitle.toLowerCase()}" ("studentid", "studentemail")
+                VALUES ($1, $2)`, [userId, req.body.username], (dberr, dbres) => {
+                  if (dberr) {
+                    console.log(dberr);
+                    res.status(403);
+                  }  
+                  // else{
+                  //   res.json({ message: 'Course registered successfully' });
+                  // }
+                });
               });
+
+              
 
               // add user to courses table entry
               pool.query(`UPDATE courses SET "subscribers" = array_append("subscribers", $1)
               WHERE "courseId" = $2`, [req.body.username, courseId], (dberr, dbres) => {
                 if (dberr) {
                   console.log(dberr);
+                  res.status(403);
                 }
                 else{
                   res.json({ message: 'Course registered successfully' });
@@ -424,4 +510,36 @@ router.post('/signup', async (req, res) => {
       }
     })
   });
+
+  // send marks table column names
+  router.get("/courses/:courseId/marksTableCols", authenticateJwt, async (req, res) => {
+    const courseId = req.params.courseId;
+    console.log(`cousre id : ${courseId}`);
+    pool.query(`SELECT "courseTitle" FROM courses WHERE "courseId" = $1`, [courseId],
+                (dberr, dbres) => {
+                  if (dberr){
+                    console.log(dberr);
+                    res.status(403).json({message: "DB error"});
+                  }
+                  else {
+                    const courseTitle = dbres.rows[0].courseTitle;
+                    pool.query(`SELECT column_name FROM information_schema.columns 
+                                WHERE table_name = 'marks_${courseTitle.toLowerCase()}';`,
+                                (dberr, dbres) => {
+                                  if (dberr){
+                                    console.log(dberr);
+                                    res.status(403).json({message: "DB error"});
+                                  }
+                                  else {
+                                    console.log("columns");
+                                    console.log(dbres.rows);
+                                    columns = dbres.rows.map(row => {
+                                      return row.column_name
+                                    })
+                                    res.json({columns : columns})
+                                  }
+                                })
+                  }
+                })
+  } );
 module.exports = router

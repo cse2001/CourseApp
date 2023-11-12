@@ -13,6 +13,7 @@ import axios from "axios";
 import { BASE_URL } from "../config.js";
 import {userState} from "../store/atoms/user.js";
 import { userCoursesState } from "../store/selectors/userCourses.js";
+import { Typography } from '@mui/material';
 
 
 import {
@@ -48,23 +49,26 @@ var courseId;
 function EditToolbar(props) {
   const { setRows, setRowModesModel } = props;
 
-  const handleClick =  () => {
+  // const handleClick =  () => {
     // ADD SIGNUP FUNCTIONALITY HERE
-    const id = randomId();
-    setRows((oldRows) => [...oldRows, { id, name: '', age: '', isNew: true }]);
-    setRowModesModel((oldModel) => ({
-      ...oldModel,
-      [id]: { mode: GridRowModes.Edit, fieldToFocus: 'name' },
-    }));
-  };
+    // const id = randomId();
+  //   setRows((oldRows) => [...oldRows, { id, name: '', age: '', isNew: true }]);
+  //   setRowModesModel((oldModel) => ({
+  //     ...oldModel,
+  //     [id]: { mode: GridRowModes.Edit, fieldToFocus: 'name' },
+  //   }));
+  // };
 
-  return (
-    <GridToolbarContainer>
-      <Button color="primary" startIcon={<AddIcon />} onClick={handleClick}>
-        Add record
-      </Button>
-    </GridToolbarContainer>
-  );
+  // return (
+  //   <GridToolbarContainer>
+  //     <Button color="primary" startIcon={<AddIcon />} onClick={handleClick}>
+  //       Add record
+  //     </Button>
+  //   </GridToolbarContainer>
+  // );
+  return <div>
+    <Typography variant="h4" style={{display:"flex", justifyContent:"center", margin:5}}>Participants</Typography>
+    </div>
 }
 
 export default function FullFeaturedCrudGrid() {
@@ -294,12 +298,12 @@ export default function FullFeaturedCrudGrid() {
         onRowModesModelChange={handleRowModesModelChange}
         onRowEditStop={handleRowEditStop}
         processRowUpdate={processRowUpdate}
-        // slots={{
-        //   toolbar: EditToolbar,
-        // }}
-        // slotProps={{
-        //   toolbar: { setRows, setRowModesModel },
-        // }}
+        slots={{
+          toolbar: EditToolbar,
+        }}
+        slotProps={{
+          toolbar: { setRows, setRowModesModel },
+        }}
       />
     </Box>
     </ div>;

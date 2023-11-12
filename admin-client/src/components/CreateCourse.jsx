@@ -57,7 +57,7 @@ function CreateCourse() {
                     size={"small"}
                     variant="contained"
                     onClick={async () => {
-                        await axios.post(`${BASE_URL}/admin/courses`, {
+                        const res = await axios.post(`${BASE_URL}/admin/courses`, {
                             title: title,
                             instructor: instructor,
                             imageLink: imageLink,
@@ -67,7 +67,7 @@ function CreateCourse() {
                                 "Authorization": "Bearer " + localStorage.getItem("token")
                             }
                         });
-                        alert("Added New Course Successfully");
+                        alert(res.data.message);
                         navigate("/allcourses");
                     }}
                 > Create Course</Button>

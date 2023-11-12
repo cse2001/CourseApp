@@ -10,6 +10,9 @@ import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
 import { isCourseLoading, courseTitle, courseInstructor, courseImageLink, courseSubscribers } from "../store/selectors/course";
 import BackgroundHeader from "./BackgroundHeader";
 import FullFeaturedCrudGrid from "./ParticipantsTable";
+import FullFeaturedCrudGrid2 from "./DoGrading.jsx";
+import Grading from "./DoGrading.jsx";
+
 
 function UpdateCourseInfo() {
     let { courseId } = useParams();
@@ -37,17 +40,27 @@ function UpdateCourseInfo() {
 
     return <div>
         <BackgroundHeader text={`Edit Course Info: ${title}`}/>
-        <Grid container style={{paddingTop: "8vw", paddingLeft:"4vw", paddingBottom :"4vw", marginTop:140 }} >
-            <Grid item lg={5} md={12} sm={12}>
+        <Grid container spacing={2} style={{paddingTop: "8vw", paddingLeft:"4vw", paddingBottom :"4vw", marginTop:140 }} >
+            <Grid item lg={4} md={12} sm={12}>
                 <CourseCard />
             </Grid>
-            <Grid item lg={7} md={12} sm={12}>
+            <Grid item lg={4} md={12} sm={12}>
                 <UpdateCourseCard />
             </Grid>
+            <Grid item lg={4} md={12} sm={12}>
+                <UploadCard courseId={courseId} />
+            </Grid>
         </Grid>
-        <UploadCard courseId={courseId} />
+        
         
         <FullFeaturedCrudGrid courseID={courseId}/>
+
+        {/* <FullFeaturedCrudGrid2 /> */}
+
+        <Grading />
+
+
+    
 
     </div>
 }
@@ -61,7 +74,7 @@ function UpdateCourseCard() {
     const [subscribers, setSubscribers] = useState(courseInfo.course.subscribers);
 
     return <div style={{display: "flex", justifyContent: "center"}}>
-    <Card varint={"outlined"} style={{maxWidth: 600, borderRadius: 20,}}>
+    <Card varint={"outlined"} style={{maxWidth: 400, borderRadius: 20, margin:20}}>
         <div style={{padding: 20 }}>
             <Typography variant='h6' style={{marginBottom: 10, display: "flex", justifyContent: "center"}}>Update Course Info</Typography>
             <TextField
@@ -73,6 +86,7 @@ function UpdateCourseCard() {
                 fullWidth={true}
                 label="Title"
                 variant="outlined"
+                size="small"
             />
 
             <TextField
@@ -84,6 +98,7 @@ function UpdateCourseCard() {
                 fullWidth={true}
                 label="Instructor"
                 variant="outlined"
+                size="small"
             />
 
             <TextField
@@ -95,22 +110,14 @@ function UpdateCourseCard() {
                 fullWidth={true}
                 label="imageLink"
                 variant="outlined"
+                size="small"
             />
 
-            <TextField
-                value={subscribers}
-                style={{marginBottom: 10}}
-                onChange={(e) => {
-                    setSubscribers(e.target.value)
-                }}
-                fullWidth={true}
-                label="Subscribers"
-                variant="outlined"
-            />
 
             <div style={{display: "flex", justifyContent: "center"}}>
             <Button
                 variant="contained"
+                size="small"
                 onClick={async () => {
                     axios.put(`${BASE_URL}/admin/courses/` + courseDetails.course._id, {
                         title: title,
@@ -144,10 +151,9 @@ function CourseCard(props) {
     const imageLink = useRecoilValue(courseImageLink);
     const instructor = useRecoilValue(courseInstructor);
 
-    return <div style={{display: "flex", justifyContent: "center", width: "100%"}}>
+    return <div style={{display: "flex", justifyContent: "center", width: "100%", marginTop:20, marginLeft:50, minHeight:263}}>
      <Card style={{
-        width: 550,
-        marginLeft: 50,
+        width: 350,
         minHeight: 200,
         borderRadius: 20,
         paddingBottom: 10,
@@ -218,12 +224,10 @@ function UploadCard(props) {
         });
     }
 
-    return <div style={{display: "flex", justifyContent: "center"}}><Card style={{
+    return <div style={{display: "flex", justifyContent: "center", marginTop:20, marginRight:100, minHeight:263}}><Card style={{
         
-        width: 550,
-        marginLeft: 50,
+        width: 350,
         minHeight: 100,
-        marginBottom: 50,
         borderRadius: 20,
         paddingBottom: 10}}>
         <div style={{display: "flex", justifyContent: "center"}}><h3>Upload Files</h3></div>
