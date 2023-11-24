@@ -12,7 +12,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import List from '@mui/material/List';
-import { Drawer, Typography } from "@mui/material";
+import { Divider, Drawer, Typography } from "@mui/material";
 import Box from '@mui/material/Box';
 
 import ReactPlayer from 'react-player';
@@ -23,6 +23,7 @@ export default function CourseContent() {
   const setCourse = useSetRecoilState(courseState);
   const courseLoading = useRecoilValue(isCourseLoading);
   const title = useRecoilValue(courseTitle);
+  console.log(`cousre title for above : ${title}`);
   useEffect(() => {
       axios.get(`${BASE_URL}/admin/course/${courseId}`, {
         //   method: "GET",
@@ -61,10 +62,12 @@ function FileList(props) {
   const [fileTitle, setFileTitle] = useState(null);
   const navigate = useNavigate();
   const handleFileClick = async (fileTitle) => {
+    // console.log(`cousre title in grdaes click: ${props.courseTitle} ${props.courseId}`)
     try {
       const response = await axios.get(`${BASE_URL}/admin/upload/${props.courseId}/${fileTitle}`,{
         headers: {
-            "Authorization": "Bearer " + localStorage.getItem("token")
+            "Authorization": "Bearer " + localStorage.getItem("token"),
+            "coursetitle": props.courseTitle
         },
         responseType: 'blob' // This is important // new
       });
@@ -106,6 +109,7 @@ function FileList(props) {
   }, []);
 
   const drawerWidth =240;
+  let fileIndex = 0;
 
   return (<div>
     {/* // <div style={{marginTop:'64px'}}> */}
@@ -126,13 +130,30 @@ function FileList(props) {
             <ListItem >
               <ListItemText primary={"No content available"} />
             </ListItem>}
-        {(files.length !== 0) && files.map((file, index) => (
-          <ListItem key={index} disablePadding>
-              <ListItemButton onClick={() =>{handleFileClick(file)}}>
-                  <ListItemText primary={(index + 1) + '. ' + file} />
-              </ListItemButton>
-          </ListItem>
-        ))}
+        
+        {(files.length !== 0) && files.map((file, index) => {
+            if (file !== "Grades"){
+              fileIndex += 1;
+              return (<ListItem key={index} disablePadding>
+                <ListItemButton onClick={() =>{handleFileClick(file)}}>
+                    <ListItemText primary={(fileIndex) + '. ' + file} />
+                </ListItemButton>
+              </ListItem>)
+            }
+          }
+        )}
+        <Divider />
+        {(files.length !== 0) && files.map((file, index) => {
+            if (file == "Grades"){
+              return (<ListItem key={index} disablePadding>
+                <ListItemButton onClick={() =>{handleFileClick(file)}}>
+                    <ListItemText primary={file} />
+                </ListItemButton>
+            </ListItem>)
+            }
+          }
+        )}
+        
       </List>
       </Drawer>
       
@@ -147,7 +168,7 @@ function FileList(props) {
           <div >
             <div>{!fileType &&<Typography>Select a content from the left menu to view</Typography>}</div><br/>
             <div style={{marginBottom:20}}>{fileType && <Typography variant="h6">Topic : <b>{fileTitle}</b></Typography>}</div><br/>
-            <div style={{display:"flex", justifyContent:"center"}}>{fileType && fileType.startsWith('image') && <img src={fileContent} alt="content" maxwidth={400} height={300}/>}</div>
+            <div style={{display:"flex", justifyContent:"center"}}>{fileType && fileType.startsWith('image') && <img src={fileContent} alt="content" maxwidth={600} height={400}/>}</div>
             <div style={{display:"flex", justifyContent:"center"}}>{fileType && fileType.startsWith('video') && <ReactPlayer url={fileContent} controls={true} />}</div>
             <div style={{display:"flex", justifyContent:"center"}}>{fileType && fileType.startsWith('text') && <Typography variant="h7" >{fileContent}</Typography>}</div>
             <div style={{display:"flex", justifyContent:"center"}}>{fileType && fileType === 'application/pdf' && <PdfViewer fileContent={fileContent} />}</div>

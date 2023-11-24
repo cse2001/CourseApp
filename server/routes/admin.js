@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { SECRET } = require("../middleware/auth")
 const { authenticateJwt } = require("../middleware/auth");
+const { spawn } = require('child_process');
 
 const router = express.Router();
 const { pool } = require("../db/dbConfig");
@@ -66,15 +67,83 @@ router.get('/upload/:courseId', authenticateJwt, (req, res) => {
   });
 });
 
-/* new send file content */
+async function generateGradesPlot (userEmail, courseId, courseTitle){
+  let data = {
+    quiz: '0',
+    midsem: '0',
+    endsem: '0'
+  };
 
+  pool.query(`SELECT * FROM marks_${courseTitle} WHERE "studentemail" = $1 `, [userEmail], (dberr, dbres) => {
+    if (dberr) {
+      throw dberr;
+    }
+    if (dbres.rows.length !== 0) {
+      data = dbres.rows[0];
+      let {studentid, studentemail, ...marks} = data;
+
+      runPythonScript(marks)
+      .then(() => {
+          console.log('Python script finished successfully');
+      })
+      .catch((error) => {
+          console.error('Failed to run Python script:', error);
+      });
+
+    }
+    else{
+      console.log("Grades are empty for this user")
+    }
+  })
+
+  function runPythonScript(data) {
+    return new Promise((resolve, reject) => {
+        let python = spawn('python', ['./python_scripts/plotgrades.py', JSON.stringify(data), userEmail, courseId]);
+
+        python.stdout.on('data', function (data) {
+            console.log('Pipe data from python script ...');
+            console.log(data.toString());
+        });
+
+        python.stderr.on('data', (data) => {
+          console.error(`Python script error: ${data}`);
+        });
+
+        python.on('close', (code) => {
+            console.log(`child process close all stdio with code ${code}`);
+            if (code !== 0) {
+                reject(new Error(`Python script exited with code ${code}`));
+            } else {
+                resolve();
+            }
+        });
+
+        python.on('error', (error) => {
+          console.log(error)
+            reject(error);
+        });
+    });
+  }
+
+  
+}
+
+/* new send file content */
 router.get('/upload/:courseId/:fileTitle', authenticateJwt, async (req, res) => {
   const courseId = req.params.courseId;
   const fileTitle = req.params.fileTitle;
-  const directoryPath = `./public/courseId_${courseId}/${fileTitle}`;
+  const courseTitle = req.headers.coursetitle;
+  console.log("cousre titel fffff");
+  console.log(courseTitle);
+  const directoryPath = `./public/courseId_${courseId}/${fileTitle}`; 
   
   try {
     const files = await fs.promises.readdir(directoryPath);
+
+    if (fileTitle === "Grades" || files.length === 0){
+      await generateGradesPlot(req.user.username, courseId, courseTitle);
+    }
+
     console.log(`files found in ${fileTitle} dir: ${files}`);
     const filename = files.filter(item => item !== "fileinfo.json")[0];
     const filePath = path.join(directoryPath, filename);
@@ -102,8 +171,8 @@ router.get('/upload/:courseId/:fileTitle', authenticateJwt, async (req, res) => 
 
     console.log(`filename: ${filename}   filetype: ${contentType}`);
 
-    const readStream = fs.createReadStream(filePath);
-    readStream.pipe(res);
+    const readStream = fs.createReadStream(filePath); // read file from disk
+    readStream.pipe(res); // send file to client
   } catch (err) {
       console.log(err);
       res.status(500).send('Unable to scan directory: ' + err);
@@ -156,6 +225,7 @@ router.get('/upload/:courseId/:fileTitle', authenticateJwt, async (req, res) => 
 //     })
 //   });
 // });
+
 
 router.get("/me", authenticateJwt, async (req, res) => {
   
@@ -266,18 +336,24 @@ router.post('/signup', async (req, res) => {
                         // res.json({ message: 'Course created successfully', courseId: course.courseId, courseTitle: course.courseTitle });
                         // studentId INTEGER REFERENCES users(id),
                         pool.query(`CREATE TABLE marks_${title} (
-                          studentId INTEGER,
-                          studentEmail TEXT,
-                          marks INTEGER
+                          studentId INTEGER PRIMARY KEY,
+                          studentEmail TEXT UNIQUE,
+                          quiz DOUBLE PRECISION,
+                          midsem DOUBLE PRECISION,
+                          endsem DOUBLE PRECISION
                           );`, [], (dberr, dbres) => {
                             if (dberr) {
                               console.log(dberr);
                             }
                             else{
+                              // create Grades directory
+                              const dirPath = `./public/courseId_${course.courseId}`;
+                              fs.mkdirSync(dirPath, { recursive: true });
+                              
                               res.json({ message: 'Course created successfully', courseId: course.courseId, courseTitle: course.courseTitle });
                             };
                           });
-                          pool.end();
+                        
                       }
                     });
       }
@@ -327,6 +403,7 @@ router.post('/signup', async (req, res) => {
     })
   });
 
+  /* send marks_<courstitle> , i.e. marks of all participants*/ 
   router.get('/courses/:courseId/marks/:courseTitle', authenticateJwt, async (req, res) => {
     const courseId = req.params.courseId;
     const courseTitle = req.params.courseTitle;
@@ -371,6 +448,7 @@ router.post('/signup', async (req, res) => {
     })
   });
 
+  // enroll a student into a course
   router.post('/courses/:courseId/:courseTitle', authenticateJwt, async (req, res) => {
     const courseId = req.params.courseId;
     const courseTitle = req.params.courseTitle;
@@ -400,6 +478,10 @@ router.post('/signup', async (req, res) => {
 
             else {  // course not already registered
               
+              // create Grades directory
+              const dirPath = `./public/courseId_${courseId}/${"Grades"}`;
+              fs.mkdirSync(dirPath, { recursive: true });
+
               var userId;
               // add course to users table entry 
               pool.query(`UPDATE users SET "subscribedCourses" = array_append("subscribedCourses", $1)
@@ -429,8 +511,7 @@ router.post('/signup', async (req, res) => {
                   // }
                 });
               });
-
-              
+             
 
               // add user to courses table entry
               pool.query(`UPDATE courses SET "subscribers" = array_append("subscribers", $1)

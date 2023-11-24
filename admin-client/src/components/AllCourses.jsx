@@ -171,6 +171,8 @@ function EnrollButton(props){
                     ...user,
                     userCourses: newUserCourses,
                 });
+
+
                 navigate("/allcourses");
             }}>Enroll</Button>)
 }
