@@ -147,7 +147,7 @@ function EnrollButton(props){
             size={"small"}
             variant="contained"
             onClick={async () => {
-                const res = await axios.post(`${BASE_URL}/${props.userType}/courses/${props.courseId}/${props.courseTitle}`, {
+                const res = await axios.post(`${BASE_URL}/admin/courses/${props.courseId}/${props.courseTitle}`, {
                     username: user.userEmail
                 }, {
                     headers: {

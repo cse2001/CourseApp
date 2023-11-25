@@ -119,7 +119,7 @@ function UpdateCourseCard() {
                 variant="contained"
                 size="small"
                 onClick={async () => {
-                    axios.put(`${BASE_URL}/admin/courses/` + courseDetails.course._id, {
+                    const res = await axios.put(`${BASE_URL}/admin/courses/` + courseInfo.course.courseId, {
                         title: title,
                         instructor: instructor,
                         imageLink: imageLink,
@@ -131,13 +131,14 @@ function UpdateCourseCard() {
                         }
                     });
                     let updatedCourse = {
-                        id: courseInfo.course.courseId,
-                        title: title,
-                        instructor: instructor,
+                        courseId: courseInfo.course.courseId,
+                        courseTitle: title,
+                        courseInstructor: instructor,
                         imageLink: imageLink,
                         subscribers: subscribers
                     };
                     setCourse({course: updatedCourse, isLoading: false});
+                    alert(res.data.message);
                 }}
             > Update course</Button>
             </div>

@@ -361,12 +361,50 @@ router.post('/signup', async (req, res) => {
   });
   
   router.put('/courses/:courseId', authenticateJwt, async (req, res) => {
-    const course = await Course.findByIdAndUpdate(req.params.courseId, req.body, { new: true });
-    if (course) {
-      res.json({ message: 'Course updated successfully' });
-    } else {
-      res.status(404).json({ message: 'Course not found' });
-    }
+    const courseId = req.params.courseId;
+    const title = req.body.title;
+    const instructor = req.body.instructor;
+    const imageLink = req.body.imageLink;
+
+    pool.query(`SELECT * FROM courses WHERE "courseId" = $1`, [courseId], (dberr, dbres) => {
+
+      if (dberr){
+        console.log(dberr);
+        res.status(500);
+      }
+      else{
+        if (dbres.rows.length !== 0){
+          const oldTitle = dbres.rows[0].courseTitle;
+          pool.query(`UPDATE "courses" SET 
+          "courseTitle" = $1,
+          "courseInstructor" = $2,
+          "imageLink" = $3`, [title, instructor, imageLink], (dberr, dbres) => {
+            if (dberr){
+              console.log(dberr);
+              res.status(500);
+            }
+            else{
+              console.log("course table update");
+              pool.query(`ALTER TABLE "marks_${oldTitle}" RENAME TO "marks_${title}";`,
+               [], 
+               (dberr, dbres) => {
+                if (dberr){
+                  console.log(dberr);
+                  res.status(500);
+                }
+                else{
+                  console.log(`marks_${oldTitle} table renamed`);
+                  res.json({message : "Course details updated succesfully"});
+                }
+              })
+            }
+
+          })
+        }
+      }
+
+    })
+
   });
   
   router.get('/courses', authenticateJwt, async (req, res) => {
