@@ -16,6 +16,8 @@ def main(data, userEmail, courseId):
     plt.ylabel("Scores")
     #plt.grid(b='on')
     plt.xticks(index, gradeheaders)
+    # plt.ylim(0, 10)
+    # plt.yticks(range(0, 11))
 
     for i in range(len(gradevalues)):
       plt.text(x = index[i]-0.1, y = gradevalues[i]+0.05, s = gradevalues[i], size = 10)

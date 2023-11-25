@@ -74,28 +74,6 @@ async function generateGradesPlot (userEmail, courseId, courseTitle){
     endsem: '0'
   };
 
-  pool.query(`SELECT * FROM marks_${courseTitle} WHERE "studentemail" = $1 `, [userEmail], (dberr, dbres) => {
-    if (dberr) {
-      throw dberr;
-    }
-    if (dbres.rows.length !== 0) {
-      data = dbres.rows[0];
-      let {studentid, studentemail, ...marks} = data;
-
-      runPythonScript(marks)
-      .then(() => {
-          console.log('Python script finished successfully');
-      })
-      .catch((error) => {
-          console.error('Failed to run Python script:', error);
-      });
-
-    }
-    else{
-      console.log("Grades are empty for this user")
-    }
-  })
-
   function runPythonScript(data) {
     return new Promise((resolve, reject) => {
         let python = spawn('python', ['./python_scripts/plotgrades.py', JSON.stringify(data), userEmail, courseId]);
@@ -124,8 +102,34 @@ async function generateGradesPlot (userEmail, courseId, courseTitle){
         });
     });
   }
-
   
+  return new Promise((resolve, reject) => {
+        pool.query(`SELECT * FROM marks_${courseTitle} WHERE "studentemail" = $1 `, [userEmail], (dberr, dbres) => {
+          if (dberr) {
+            throw dberr;
+          }
+          if (dbres.rows.length !== 0) {
+            data = dbres.rows[0];
+            let {studentid, studentemail, ...marks} = data;
+
+            runPythonScript(marks)
+            .then(() => {
+                console.log('Python script finished successfully');
+                console.log(userEmail + "_plot.png1");
+                resolve(userEmail + "_plot.png");
+            })
+            .catch((error) => {
+                console.error('Failed to run Python script:', error);
+                reject(error);
+            });
+
+          }
+          else{
+            console.log("Grades are empty for this user");
+            resolve(null);
+          }
+        })
+    })
 }
 
 /* new send file content */
@@ -137,46 +141,88 @@ router.get('/upload/:courseId/:fileTitle', authenticateJwt, async (req, res) => 
   console.log(courseTitle);
   const directoryPath = `./public/courseId_${courseId}/${fileTitle}`; 
   
-  try {
-    const files = await fs.promises.readdir(directoryPath);
-
-    if (fileTitle === "Grades" || files.length === 0){
-      await generateGradesPlot(req.user.username, courseId, courseTitle);
-    }
-
-    console.log(`files found in ${fileTitle} dir: ${files}`);
-    const filename = files.filter(item => item !== "fileinfo.json")[0];
-    const filePath = path.join(directoryPath, filename);
-    const stat = fs.statSync(filePath);
-    const fileSize = stat.size;
-    const ext = path.extname(filePath).toLowerCase(); 
-    let contentType;
-
-    if (ext === '.txt') {
-      contentType = 'text/plain';
-    } else if (ext === '.jpg' || ext === '.jpeg') {
-      contentType = 'image/jpeg';
-    } else if (ext === '.png') {
-      contentType = 'image/png';
-    } else if (ext === '.mp4') {
-      contentType = 'video/mp4';
-    } else if (ext === '.pdf') {
-      contentType = 'application/pdf';
-    }
   
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Content-Length': fileSize
-    });
 
-    console.log(`filename: ${filename}   filetype: ${contentType}`);
+    if (fileTitle === "Grades" ){
+      try {
+          const files = await fs.promises.readdir(directoryPath);
+          console.log(`files found in ${fileTitle} dir: ${files}`);
+          const email = req.user.username;
+          const plotname = await generateGradesPlot(email, courseId, courseTitle);
+          const filename = files.filter(item => item == `${plotname}`)[0];
+          console.log("filename in gardes:");
+          console.log(filename);
+          
+          const filePath = path.join(directoryPath, filename);
+          const stat = fs.statSync(filePath);
+          const fileSize = stat.size;
+          const ext = path.extname(filePath).toLowerCase(); 
+          let contentType;
+      
+          if (ext === '.txt') {
+            contentType = 'text/plain';
+          } else if (ext === '.jpg' || ext === '.jpeg') {
+            contentType = 'image/jpeg';
+          } else if (ext === '.png') {
+            contentType = 'image/png';
+          } else if (ext === '.mp4') {
+            contentType = 'video/mp4';
+          } else if (ext === '.pdf') {
+            contentType = 'application/pdf';
+          }
+        
+          res.writeHead(200, {
+            'Content-Type': contentType,
+            'Content-Length': fileSize
+          });
+      
+          console.log(`filename: ${filename}   filetype: ${contentType}`);
+      
+            const readStream = fs.createReadStream(filePath); // read file from disk
+            readStream.pipe(res); // send file to client
+          } catch (err) {
+              console.log(err);
+              res.status(500).send('Unable to find plot for user: ' + err);
+          }
+    }
 
-    const readStream = fs.createReadStream(filePath); // read file from disk
-    readStream.pipe(res); // send file to client
-  } catch (err) {
-      console.log(err);
-      res.status(500).send('Unable to scan directory: ' + err);
-  }
+    else {
+      try {
+        const files = await fs.promises.readdir(directoryPath);
+        console.log(`files found in ${fileTitle} dir: ${files}`);
+        const filename = files.filter(item => item !== "fileinfo.json")[0];
+        const filePath = path.join(directoryPath, filename);
+        const stat = fs.statSync(filePath);
+        const fileSize = stat.size;
+        const ext = path.extname(filePath).toLowerCase(); 
+        let contentType;
+
+        if (ext === '.txt') {
+          contentType = 'text/plain';
+        } else if (ext === '.jpg' || ext === '.jpeg') {
+          contentType = 'image/jpeg';
+        } else if (ext === '.png') {
+          contentType = 'image/png';
+        } else if (ext === '.mp4') {
+          contentType = 'video/mp4';
+        } else if (ext === '.pdf') {
+          contentType = 'application/pdf';
+        }
+      
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Content-Length': fileSize
+        });
+
+        console.log(`filename: ${filename}   filetype: ${contentType}`);
+
+        const readStream = fs.createReadStream(filePath); // read file from disk
+        readStream.pipe(res); // send file to client
+        } catch (err) {
+            console.log(err);
+            res.status(500).send('Unable to scan directory: ' + err);
+        }
+    }
 
 });
 
@@ -246,7 +292,7 @@ router.get("/me", authenticateJwt, async (req, res) => {
 });
 
 router.post('/signup', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, name } = req.body;
     let errors = [];
     if (!username || !password){
       errors.push({message: "Please enter all fields."})
@@ -271,9 +317,9 @@ router.post('/signup', async (req, res) => {
                       res.status(403).json({message: "Email Already Exists."});
                     }
                     else{
-                      pool.query(`INSERT INTO users (email, password, type)
-                                  VALUES ($1, $2, $3)
-                                  RETURNING id, password`, [username, password, 'admin'], (err, dbres) => {
+                      pool.query(`INSERT INTO users (name, email, password, type)
+                                  VALUES ($1, $2, $3, $4)
+                                  RETURNING id, password`, [name, username, password, 'admin'], (err, dbres) => {
                                     if (err) {
                                       console.log(err);
                                     }
